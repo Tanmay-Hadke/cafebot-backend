@@ -1,8 +1,12 @@
 const express = require('express');
 const app = express();
-app.use(express.json()); // Parses incoming Dialogflow JSON requests
+app.use(express.json());
 
-// Price mapping matrix
+// This is the new part for web browsers!
+app.get('/', (req, res) => {
+    res.send("🟢 CafeBot Webhook is online and ready to receive Dialogflow requests!");
+});
+
 const PRICING = {
     'small': 3.00,
     'medium': 4.00,
@@ -10,16 +14,13 @@ const PRICING = {
 };
 
 app.post('/webhook', (req, res) => {
-    // 1. Extract the intent name and parameters from the Dialogflow JSON payload
     const intentName = req.body.queryResult.intent.displayName;
     const parameters = req.body.queryResult.parameters;
 
     if (intentName === 'Order_Coffee') {
-        // Grab the entity values extracted by Dialogflow
         const size = parameters['coffee-size'].toLowerCase();
         const type = parameters['coffee-type'];
 
-        // 2. Business Logic: Handle missing parameters or calculate prices
         if (!size || !type) {
             return res.json({
                 fulfillmentText: "I caught that you wanted coffee, but could you specify the size (Small, Medium, Large) and the type?"
@@ -28,13 +29,11 @@ app.post('/webhook', (req, res) => {
 
         const price = PRICING[size] || 4.00;
 
-        // 3. Construct the response format Dialogflow expects
         return res.json({
             fulfillmentText: `Perfect! One ${size} ${type} coming right up. That will be $${price.toFixed(2)}. Can I get you anything else?`
         });
     }
 
-    // Default fallback if an unhandled intent hits the webhook
     return res.json({
         fulfillmentText: "My backend received the request, but I don't know how to process that specific intent yet."
     });
